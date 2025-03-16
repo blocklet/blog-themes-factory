@@ -474,15 +474,14 @@ apiRouter.get("/themes/:id/git-remote", (req, res) => {
     return res.status(404).json({ error: "主题不存在" });
   }
 
-  // 执行 git 命令检查远程仓库配置
+  // 检查 git 远程仓库配置
   exec(`cd ${theme.path} && git remote -v`, (error, stdout, stderr) => {
     if (error) {
-      console.error(`检查远程仓库配置失败: ${error.message}`);
       // 如果是因为不是 git 仓库导致的错误，返回特定状态
       if (error.message.includes("not a git repository")) {
         return res.json({ hasRemote: false, isGitRepo: false, remotes: [] });
       }
-      return res.status(500).json({ error: `检查远程仓库配置失败: ${error.message}` });
+      return res.status(500).json({ error: `检查 git 远程仓库配置失败: ${error.message}` });
     }
 
     // 解析远程仓库信息
@@ -503,13 +502,75 @@ apiRouter.get("/themes/:id/git-remote", (req, res) => {
     // 检查是否有 origin 远程仓库
     const hasOrigin = remotes.some((remote) => remote.name === "origin");
 
+    // 如果有 origin 远程仓库，设置仓库 URL
+    let repoUrl = null;
+    if (hasOrigin) {
+      const originRemote = remotes.find((r) => r.name === "origin" && r.type === "fetch");
+      if (originRemote) {
+        let url = originRemote.url;
+        // 将 SSH URL 转换为 HTTPS URL 以便在浏览器中打开
+        if (url.startsWith("git@github.com:")) {
+          url = url.replace("git@github.com:", "https://github.com/").replace(/\.git$/, "");
+        } else if (url.startsWith("https://") && url.endsWith(".git")) {
+          url = url.replace(/\.git$/, "");
+        }
+        repoUrl = url;
+      }
+    }
+
     res.json({
       hasRemote: remotes.length > 0,
       isGitRepo: true,
       remotes,
       hasOrigin,
+      repoUrl,
     });
   });
+});
+
+// 检查主题的子模块状态
+apiRouter.get("/themes/:id/submodule-status", (req, res) => {
+  const { id } = req.params;
+  const theme = themes.find((t) => t.id === id);
+
+  if (!theme) {
+    return res.status(404).json({ error: "主题不存在" });
+  }
+
+  // 获取主题的相对路径（相对于工作目录）
+  const relativeThemePath = path.relative(WORKSPACE_DIR, theme.path);
+
+  // 检查是否已经是子模块
+  exec(
+    `git submodule status ${relativeThemePath}`,
+    { cwd: WORKSPACE_DIR },
+    (error, stdout, stderr) => {
+      if (error) {
+        // 如果命令执行失败，可能是因为不是子模块或者其他原因
+        return res.json({
+          success: true,
+          isSubmodule: false,
+          message: "此主题尚未添加为子模块",
+        });
+      }
+
+      // 如果有输出，说明是子模块
+      if (stdout.trim()) {
+        return res.json({
+          success: true,
+          isSubmodule: true,
+          message: "此主题已添加为子模块",
+          details: stdout.trim(),
+        });
+      } else {
+        return res.json({
+          success: true,
+          isSubmodule: false,
+          message: "此主题尚未添加为子模块",
+        });
+      }
+    },
+  );
 });
 
 // 创建 GitHub 仓库并提交代码
@@ -542,16 +603,101 @@ apiRouter.post("/themes/:id/create-github-repo", (req, res) => {
 
       console.log(`GitHub 仓库创建成功: ${stdout}`);
 
-      // 返回成功信息和仓库 URL
-      res.json({
-        success: true,
-        message: "GitHub 仓库创建成功",
-        repoUrl: `https://github.com/${orgName}/${repoName}`,
-        output: stdout,
-      });
+      // 创建成功后，更新主仓库的子模块
+      updateSubmodule(theme.path, orgName, repoName)
+        .then((updateResult) => {
+          // 返回成功信息和仓库 URL
+          res.json({
+            success: true,
+            message: "GitHub 仓库创建成功，子模块已更新",
+            repoUrl: `https://github.com/${orgName}/${repoName}`,
+            output: stdout,
+            submoduleUpdate: updateResult,
+          });
+        })
+        .catch((updateError) => {
+          console.error(`更新子模块失败: ${updateError.message}`);
+          // 即使子模块更新失败，仍然返回仓库创建成功的信息
+          res.json({
+            success: true,
+            message: "GitHub 仓库创建成功，但子模块更新失败",
+            repoUrl: `https://github.com/${orgName}/${repoName}`,
+            output: stdout,
+            submoduleUpdateError: updateError.message,
+          });
+        });
     },
   );
 });
+
+// 更新主仓库的子模块
+async function updateSubmodule(themePath, orgName, repoName) {
+  return new Promise((resolve, reject) => {
+    // 获取主题的相对路径（相对于工作目录）
+    const relativeThemePath = path.relative(WORKSPACE_DIR, themePath);
+
+    // 检查是否已经是子模块
+    exec(
+      `git submodule status ${relativeThemePath}`,
+      { cwd: WORKSPACE_DIR },
+      (error, stdout, stderr) => {
+        if (!error && stdout) {
+          // 已经是子模块，更新子模块
+          console.log(`${relativeThemePath} 已经是子模块，更新子模块...`);
+          exec(
+            `git submodule update --remote ${relativeThemePath}`,
+            { cwd: WORKSPACE_DIR },
+            (updateError) => {
+              if (updateError) {
+                return reject(new Error(`更新子模块失败: ${updateError.message}`));
+              }
+              return resolve({ status: "updated", message: "子模块已更新" });
+            },
+          );
+        } else {
+          // 不是子模块，添加为子模块
+          console.log(`${relativeThemePath} 不是子模块，添加为子模块...`);
+
+          // 先从 Git 索引中移除目录（如果存在）
+          exec(`git rm --cached ${relativeThemePath}`, { cwd: WORKSPACE_DIR }, () => {
+            // 不管移除是否成功，都尝试添加子模块
+            const repoUrl = `https://github.com/${orgName}/${repoName}.git`;
+
+            exec(
+              `git submodule add ${repoUrl} ${relativeThemePath}`,
+              { cwd: WORKSPACE_DIR },
+              (addError, addStdout) => {
+                if (addError) {
+                  return reject(new Error(`添加子模块失败: ${addError.message}`));
+                }
+
+                // 提交更改
+                exec(
+                  `git commit -m "添加 ${repoName} 作为子模块"`,
+                  { cwd: WORKSPACE_DIR },
+                  (commitError) => {
+                    if (commitError) {
+                      return reject(new Error(`提交子模块更改失败: ${commitError.message}`));
+                    }
+
+                    // 推送更改
+                    exec(`git push origin main`, { cwd: WORKSPACE_DIR }, (pushError) => {
+                      if (pushError) {
+                        return reject(new Error(`推送子模块更改失败: ${pushError.message}`));
+                      }
+
+                      return resolve({ status: "added", message: "子模块已添加并提交" });
+                    });
+                  },
+                );
+              },
+            );
+          });
+        }
+      },
+    );
+  });
+}
 
 // 删除主题
 apiRouter.delete("/themes/:id", async (req, res) => {

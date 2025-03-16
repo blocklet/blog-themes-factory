@@ -8,6 +8,7 @@ import {
   launchTheme,
   launchThemeStudio,
   checkGitRemote,
+  checkSubmoduleStatus,
   createGitHubRepo,
   deleteTheme,
   refreshThemes,
@@ -392,6 +393,26 @@ const BundleResultBox = styled.div`
   margin-top: 1rem;
 `;
 
+// 添加子模块状态相关的样式
+const SubmoduleStatus = styled.div`
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border-radius: 4px;
+  background-color: ${(props) => (props.isSubmodule ? "#e8f5e9" : "#fff3e0")};
+  border: 1px solid ${(props) => (props.isSubmodule ? "#a5d6a7" : "#ffe0b2")};
+`;
+
+const SubmoduleStatusTitle = styled.div`
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: ${(props) => (props.isSubmodule ? "#2e7d32" : "#ef6c00")};
+`;
+
+const SubmoduleStatusText = styled.div`
+  color: #37474f;
+  font-size: 0.9rem;
+`;
+
 function ThemeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -415,6 +436,9 @@ function ThemeDetail() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCheckingBundle, setIsCheckingBundle] = useState(false);
   const [bundleResult, setBundleResult] = useState(null);
+  const [isSubmodule, setIsSubmodule] = useState(false);
+  const [isCheckingSubmodule, setIsCheckingSubmodule] = useState(false);
+  const [submoduleError, setSubmoduleError] = useState("");
 
   const fetchTheme = async () => {
     try {
@@ -430,7 +454,39 @@ function ThemeDetail() {
       }
 
       // 检查 git 远程仓库配置
-      await checkGitRemoteStatus();
+      try {
+        const gitInfo = await checkGitRemote(id);
+        // 将 gitInfo 添加到主题对象中
+        setTheme((prevTheme) => ({
+          ...prevTheme,
+          gitInfo,
+        }));
+        setGitRemoteInfo(gitInfo);
+
+        // 如果有 origin 远程仓库，设置仓库 URL
+        if (gitInfo.hasOrigin) {
+          const originRemote = gitInfo.remotes.find(
+            (r) => r.name === "origin" && r.type === "fetch",
+          );
+          if (originRemote) {
+            let url = originRemote.url;
+            // 将 SSH URL 转换为 HTTPS URL 以便在浏览器中打开
+            if (url.startsWith("git@github.com:")) {
+              url = url.replace("git@github.com:", "https://github.com/").replace(/\.git$/, "");
+            } else if (url.startsWith("https://") && url.endsWith(".git")) {
+              url = url.replace(/\.git$/, "");
+            }
+            setRepoUrl(url);
+          }
+        }
+      } catch (gitError) {
+        console.error(`检查主题 ${id} 的 git 远程仓库配置失败:`, gitError);
+        // 设置一个空的 gitInfo 对象，避免 undefined 错误
+        setTheme((prevTheme) => ({
+          ...prevTheme,
+          gitInfo: { hasRemote: false, isGitRepo: false, remotes: [], repoUrl: null },
+        }));
+      }
     } catch (err) {
       console.error(`获取主题 ${id} 失败:`, err);
       setError(`获取主题 ${id} 失败，请稍后再试`);
@@ -537,8 +593,15 @@ function ThemeDetail() {
   const checkGitRemoteStatus = async () => {
     try {
       setIsCheckingGit(true);
+      setError("");
       const remoteInfo = await checkGitRemote(id);
       setGitRemoteInfo(remoteInfo);
+
+      // 更新主题对象中的 gitInfo
+      setTheme((prevTheme) => ({
+        ...prevTheme,
+        gitInfo: remoteInfo,
+      }));
 
       // 如果有 origin 远程仓库，设置仓库 URL
       if (remoteInfo.hasOrigin) {
@@ -556,8 +619,20 @@ function ThemeDetail() {
           setRepoUrl(url);
         }
       }
+
+      // 如果有远程仓库，检查子模块状态
+      if (remoteInfo.hasRemote) {
+        checkSubmoduleStatusHandler();
+      }
     } catch (err) {
       console.error(`检查主题 ${id} 的 git 远程仓库配置失败:`, err);
+      setError(`检查 Git 仓库配置失败，请稍后再试`);
+
+      // 设置一个空的 gitInfo 对象，避免 undefined 错误
+      setTheme((prevTheme) => ({
+        ...prevTheme,
+        gitInfo: { hasRemote: false, isGitRepo: false, remotes: [], repoUrl: null },
+      }));
     } finally {
       setIsCheckingGit(false);
     }
@@ -573,9 +648,24 @@ function ThemeDetail() {
 
         if (result.success) {
           setRepoUrl(result.repoUrl);
+
           // 重新检查 git 远程仓库配置
           await checkGitRemoteStatus();
-          alert(`GitHub 仓库创建成功！\n仓库地址: ${result.repoUrl}`);
+
+          // 显示包含子模块更新状态的成功消息
+          let message = `GitHub 仓库创建成功！\n仓库地址: ${result.repoUrl}`;
+
+          if (result.submoduleUpdate) {
+            message += `\n\n子模块状态: ${
+              result.submoduleUpdate.status === "added" ? "已添加" : "已更新"
+            }`;
+            message += `\n${result.submoduleUpdate.message}`;
+          } else if (result.submoduleUpdateError) {
+            message += `\n\n子模块更新失败: ${result.submoduleUpdateError}`;
+            message += `\n请手动运行 setup_submodules_fix.sh 脚本更新子模块。`;
+          }
+
+          alert(message);
         }
       } catch (err) {
         console.error(`为主题 ${id} 创建 GitHub 仓库失败:`, err);
@@ -637,8 +727,37 @@ function ThemeDetail() {
     }
   };
 
+  // 检查子模块状态
+  const checkSubmoduleStatusHandler = async () => {
+    try {
+      setIsCheckingSubmodule(true);
+      setSubmoduleError("");
+
+      const result = await checkSubmoduleStatus(id);
+
+      if (result.success) {
+        setIsSubmodule(result.isSubmodule);
+      } else {
+        setSubmoduleError(result.error || "检查子模块状态失败");
+      }
+    } catch (err) {
+      console.error(`检查主题 ${id} 的子模块状态失败:`, err);
+      setSubmoduleError("检查子模块状态失败，请稍后再试");
+    } finally {
+      setIsCheckingSubmodule(false);
+    }
+  };
+
   useEffect(() => {
     fetchTheme();
+
+    // 清理函数
+    return () => {
+      // 重置状态，避免在组件卸载后仍然尝试更新状态
+      setTheme(null);
+      setGitRemoteInfo(null);
+      setIsSubmodule(false);
+    };
   }, [id]);
 
   // 监听主题状态变化，当状态变为"就绪"时自动设置启动命令
@@ -647,6 +766,13 @@ function ThemeDetail() {
       setCommand(`cd ${theme.path} && yarn run update:deps && blocklet dev`);
     }
   }, [theme?.status]);
+
+  // 在组件加载和 git 远程仓库状态更新后检查子模块状态
+  useEffect(() => {
+    if (theme && theme.gitInfo && theme.gitInfo.hasRemote) {
+      checkSubmoduleStatusHandler();
+    }
+  }, [theme?.gitInfo?.hasRemote]);
 
   if (loading) {
     return <div className="loading">加载中...</div>;
@@ -845,19 +971,41 @@ function ThemeDetail() {
       </Section>
 
       <Section>
-        <SectionTitle>GitHub 仓库</SectionTitle>
-        {loading || isCheckingGit ? (
-          <p>正在检查 Git 配置...</p>
-        ) : error ? (
-          <ErrorMessage>{error}</ErrorMessage>
+        <SectionTitle>Git 仓库</SectionTitle>
+        {error && (
+          <ErrorMessage>
+            {error}{" "}
+            <Button
+              onClick={() => {
+                setError("");
+                checkGitRemoteStatus();
+              }}
+              style={{ marginLeft: "1rem" }}>
+              重试
+            </Button>
+          </ErrorMessage>
+        )}
+
+        {isCheckingGit ? (
+          <div>正在检查 Git 远程仓库配置...</div>
+        ) : !theme.gitInfo ? (
+          <div>
+            <p>正在加载 Git 仓库信息...</p>
+            <Button onClick={() => checkGitRemoteStatus()} style={{ marginTop: "1rem" }}>
+              重新检查 Git 仓库
+            </Button>
+          </div>
         ) : (
           <div>
-            {gitRemoteInfo && gitRemoteInfo.isGitRepo ? (
-              gitRemoteInfo.hasOrigin ? (
+            {theme.gitInfo.isGitRepo ? (
+              theme.gitInfo.hasRemote ? (
                 <div>
                   <p>此主题已关联 GitHub 仓库:</p>
                   <div style={{ marginTop: "1rem" }}>
-                    <GitHubLink href={repoUrl} target="_blank" rel="noopener noreferrer">
+                    <GitHubLink
+                      href={repoUrl || theme.gitInfo.repoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer">
                       <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
                         <path
                           fillRule="evenodd"
@@ -903,6 +1051,29 @@ function ThemeDetail() {
                     {isDeleting ? "正在删除..." : "删除主题"}
                   </DeleteButton>
                 </div>
+              </div>
+            )}
+
+            {/* 添加子模块状态信息 */}
+            {theme.gitInfo.hasRemote && (
+              <div style={{ marginTop: "1rem" }}>
+                <h4>子模块状态</h4>
+                {isCheckingSubmodule ? (
+                  <div>正在检查子模块状态...</div>
+                ) : submoduleError ? (
+                  <div style={{ color: "red" }}>{submoduleError}</div>
+                ) : (
+                  <SubmoduleStatus isSubmodule={isSubmodule}>
+                    <SubmoduleStatusTitle isSubmodule={isSubmodule}>
+                      {isSubmodule ? "已添加为子模块" : "尚未添加为子模块"}
+                    </SubmoduleStatusTitle>
+                    <SubmoduleStatusText>
+                      {isSubmodule
+                        ? "此主题已在主仓库中设置为 Git 子模块。"
+                        : "此主题尚未在主仓库中设置为 Git 子模块。当您创建 GitHub 仓库时，系统将自动尝试添加为子模块。"}
+                    </SubmoduleStatusText>
+                  </SubmoduleStatus>
+                )}
               </div>
             )}
           </div>

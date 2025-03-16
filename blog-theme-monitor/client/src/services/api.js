@@ -98,6 +98,17 @@ export const checkGitRemote = async (id) => {
   }
 };
 
+// 检查主题的子模块状态
+export const checkSubmoduleStatus = async (id) => {
+  try {
+    const response = await api.get(`/themes/${id}/submodule-status`);
+    return response.data;
+  } catch (error) {
+    console.error(`检查主题 ${id} 的子模块状态失败:`, error);
+    throw error;
+  }
+};
+
 // 创建 GitHub 仓库并提交代码
 export const createGitHubRepo = async (id) => {
   try {
