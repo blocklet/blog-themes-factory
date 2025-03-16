@@ -23,7 +23,7 @@
 ### 克隆仓库及其子模块
 
 ```bash
-git clone --recursive https://github.com/[组织名]/blog-themes-factory.git
+git clone --recursive https://github.com/blocklet/blog-themes-factory.git
 cd blog-themes-factory
 ```
 

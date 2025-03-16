@@ -18,8 +18,8 @@
 # 进入项目根目录
 cd /path/to/blog-themes-factory
 
-# 使用高级脚本创建仓库（替换 [组织名] 为您的组织名）
-bash blog-theme-monitor/create_github_repo_advanced.sh -v public -d "博客主题工厂项目，用于管理和开发多种博客主题" [组织名] blog-themes-factory
+# 使用高级脚本创建仓库
+bash blog-theme-monitor/create_github_repo_advanced.sh -v public -d "博客主题工厂项目，用于管理和开发多种博客主题" blocklet blog-themes-factory
 ```
 
 ### 2. 设置子模块
@@ -27,8 +27,8 @@ bash blog-theme-monitor/create_github_repo_advanced.sh -v public -d "博客主�
 使用我们创建的脚本将现有主题目录设置为子模块：
 
 ```bash
-# 替换 [组织名] 为您的组织名
-./setup_submodules.sh [组织名]
+# 使用修复脚本设置子模块
+./setup_submodules_fix.sh blocklet
 ```
 
 ### 3. 提交更改
@@ -57,7 +57,7 @@ git submodule status
 
 ```bash
 # 克隆主仓库及所有子模块
-git clone --recursive https://github.com/[组织名]/blog-themes-factory.git
+git clone --recursive https://github.com/blocklet/blog-themes-factory.git
 cd blog-themes-factory
 ```
 
@@ -72,7 +72,7 @@ git submodule update --remote
 
 ```bash
 # 添加新的子模块
-git submodule add https://github.com/[组织名]/[新主题名].git [新主题目录]
+git submodule add https://github.com/blocklet/[新主题名].git [新主题目录]
 git commit -m "添加新主题: [新主题名]"
 git push origin main
 ```
