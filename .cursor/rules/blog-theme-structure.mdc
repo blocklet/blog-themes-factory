@@ -1,0 +1,34 @@
+---
+description: blog site structure
+globs: 
+alwaysApply: false
+---
+# 博客主题项目结构
+
+## 核心文件结构
+- `src/pages/`: 所有页面组件
+- `src/components/`: 共享组件
+- `src/libs/`: 工具函数和数据处理
+- `src/theme.ts`: 主题配置文件
+- `src/app.css`: 全局样式和字体引入
+
+## 页面组织
+每个页面都有对应的路由和组件：
+
+| 页面类型 | 路由 | 主文件 | 主要组件 | 功能 |
+|---------|-----|-------|---------|-----|
+| 首页 | `/home` | `src/pages/home/index.tsx` | Hero, LatestBlogs | 展示站点信息和最新文章 |
+| 博客详情 | `/blog/:id` | `src/pages/blog/index.tsx` | Cover, Content, Tags, Comments | 显示文章详情 |
+| 标签页 | `/tag/:id` | `src/pages/tag/tag-blogs.tsx` | LatestBlogs | 展示特定标签的文章 |
+| 标签列表 | `/tags` | `src/pages/tag/tags.tsx` | TagList | 展示所有标签 |
+| 作者页 | `/author/:id` | `src/pages/author/index.tsx` | AuthorHero, LatestBlogs | 展示作者信息和文章 |
+
+## 关键组件
+- `latest-blogs.tsx`: 分页展示博客列表，被多个页面复用
+- `hero.tsx`: 首页顶部展示区
+- `author/components/hero.tsx`: 作者页面顶部展示区
+
+## 技术栈
+- **UI框架**: Material UI
+- **样式方案**: 响应式设计，适配多种屏幕尺寸
+- **数据获取**: 通过API获取，请勿修改数据获取逻辑

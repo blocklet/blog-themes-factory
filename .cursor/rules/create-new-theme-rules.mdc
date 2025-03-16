@@ -1,0 +1,69 @@
+---
+description: create new theme rules
+globs: 
+alwaysApply: false
+---
+# 博客主题更新指南
+
+## 主题设计要求
+1. **字体选择**
+   - 选择新的字体文件
+   - 在 `src/app.css` 中按现有方式引入字体
+   - 示例: `@import url('https://fonts.googleapis.com/css2?family=Your+Font&display=swap');`
+   - 在 `src/theme.ts` 中设置字体
+
+2. **配色方案**
+   - 确定主题色及配套色彩
+   - 在 `src/theme.ts` 中设置主题色
+   - 遵循 Material UI 的主题配置结构
+
+## 需要更新的页面和组件
+
+### 1. 首页
+- 主文件: `src/pages/home/index.tsx`
+- 关键组件:
+  - Hero区域 (`src/components/hero.tsx`)
+  - 博客列表 (`src/components/latest-blogs.tsx`)
+- 设计要点: 突出博客主题特色，保持视觉吸引力
+
+### 2. 博客详情页
+- 主文件: `src/pages/blog/index.tsx`
+- 组成部分: 封面、正文、标签、推荐博客、评论、分享
+- 设计要点: 提升阅读体验，注重内容展示
+
+### 3. 作者页面
+- 主文件: `src/pages/author/index.tsx`
+- 关键组件:
+  - 作者信息区 (`src/pages/author/components/hero.tsx`)
+  - 作者博客列表 (`src/components/latest-blogs.tsx`)
+
+### 4. 标签页面
+- 标签列表: `src/pages/tag/tags.tsx`
+- 标签博客: `src/pages/tag/tag-blogs.tsx`
+
+### 5. 博客列表组件
+- 设计要点: 突出博客主题特色，保持视觉吸引力，排版方式可以灵活发挥
+
+## 实现注意事项
+- 所有封面图片必须使用 `getCoverUrl()` 方法包装，路径: `src/libs/utils.ts`，不要去修改这个方法
+- 不要修改任何数据获取逻辑，专注于 UI/UX 改进
+- 可以根据主题适当调整页面布局
+- 确保覆盖 `src/pages` 和 `src/components` 下的所有组件
+- 可根据需要创建新组件以实现设计目标
+- 注意要分步实现，不要一步就把整个新主题生成完毕
+- 整个博客主题核心的两个对象类型在 [blog.d.ts](mdc:src/types/blog.d.ts) 和 [tag.d.ts](mdc:src/types/tag.d.ts) 中定义，你需要充分了解这两个对象上可以利用的属性
+- 页面顶部的 Hero 可以考虑增加合适的动画
+- 为每个新设计的主题起一个英文名字
+- 博客的 labels 不能直接展示 Blog 里面的 labels 字符，需要使用 [tags.tsx](mdc:src/components/tags.tsx) 组件来统一解析渲染：`<Tags tagSlugs={post.labels} />`
+- 博客内容必须用 `import { Post as DiscussPost } from '@blocklet/discuss-kit-post';` 组件渲染
+- 博客详情页必须有评论功能，由 `import { Comments } from '@blocklet/discuss-kit';` 提供该能力，这个组件需要一个 target 对象，这个严格按照之前的写法就可以
+- `<Helmet><title>{xx}</title></Helmet>` 代码需要保留，这是为了让浏览器窗口动态的更新当前页面的 title 属性
+- 确保所有的页面都适配新的主题，不要有遗漏
+
+## 提交检查清单
+- [ ] 主题字体已更新
+- [ ] 主题色已配置
+- [ ] 所有页面组件已更新
+- [ ] 所有共享组件已更新
+- [ ] 响应式设计已测试
+- [ ] 封面图片正确使用 getCoverUrl

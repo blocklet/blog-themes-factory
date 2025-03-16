@@ -1,0 +1,9 @@
+---
+description: do not start server
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+- 这次修改过程中不要启动服务，因为服务一直在启动中

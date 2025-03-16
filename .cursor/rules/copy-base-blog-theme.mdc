@@ -1,0 +1,19 @@
+---
+description: rules for how to copy base_blog_theme
+globs: 
+alwaysApply: false
+---
+我计划当前目录下利用 AI 基于现在的 `base_blog_theme` 在当前目录下复制出一个新目录，然后根据 `base_blog_theme` 目录下的 `.cursor` 里面的 rules 去重新生成一个新的博客主题，并把新的目录名称改成和主题相匹配的名字。 新建的目录会是一个单独的 git 仓库，需要后面使用 git 命令来配置。
+
+重要的规则：
+- 需要注意不要生成重名的 theme，如果发生重名需要重新生成一个新名字
+- 需要更新新复制目录的 blocklet.yml 文件中的 title，description 为新主题的名字和简介
+- 需要更新新复制目录的 package.json 中的 name 为新主题的名字
+- 需要更新新复制目录的 README.md，去除旧的内容，添加新主题的名字和简介
+- 需要更新新复制目录的 `.env.local` 文件中的 `BLOCKLET_DEV_MOUNT_POINT` 属性为 `/新主题目录的名字`
+- 复制新目录的时候忽略 .git, .blocklet, dist, node_modules 目录
+- 新建的目录需要首先做一次 `git init`, `git init` 完之后，先做一次 commit 提交，这样后面进行新的主题设计的时候，能直观从编辑器里面直观的观察到哪些文件发生了改变
+- 使用 `yarn` ，不要使用 `npm`
+- 运行项目的流程是先 `yarn` 安装依赖，再运行 `blocklet dev` 命令启动
+
+
