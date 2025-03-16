@@ -1,0 +1,21 @@
+[submodule "base_blog_theme"]
+	path = base_blog_theme
+	url = https://github.com/blocklet/base_blog_theme.git
+[submodule "cartoon-wonderland-theme"]
+	path = cartoon-wonderland-theme
+	url = https://github.com/blocklet/cartoon-wonderland-theme.git
+[submodule "cyber-neon-theme"]
+	path = cyber-neon-theme
+	url = https://github.com/blocklet/cyber-neon-theme.git
+[submodule "futuristic-tech-theme"]
+	path = futuristic-tech-theme
+	url = https://github.com/blocklet/futuristic-tech-theme.git
+[submodule "nature-vista-theme"]
+	path = nature-vista-theme
+	url = https://github.com/blocklet/nature-vista-theme.git
+[submodule "steampunk-chronicle-theme"]
+	path = steampunk-chronicle-theme
+	url = https://github.com/blocklet/steampunk-chronicle-theme.git
+[submodule "vintage-nostalgia-theme"]
+	path = vintage-nostalgia-theme
+	url = https://github.com/blocklet/vintage-nostalgia-theme.git
