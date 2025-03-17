@@ -19,3 +19,6 @@
 [submodule "vintage-nostalgia-theme"]
 	path = vintage-nostalgia-theme
 	url = https://github.com/blocklet/vintage-nostalgia-theme.git
+[submodule "cutesy-bubble-theme"]
+	path = cutesy-bubble-theme
+	url = https://github.com/blocklet/cutesy-bubble-theme.git
