@@ -22,3 +22,6 @@
 [submodule "cutesy-bubble-theme"]
 	path = cutesy-bubble-theme
 	url = https://github.com/blocklet/cutesy-bubble-theme.git
+[submodule "sketchy-journal-theme"]
+	path = sketchy-journal-theme
+	url = https://github.com/blocklet/sketchy-journal-theme.git
