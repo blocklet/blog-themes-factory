@@ -25,3 +25,6 @@
 [submodule "sketchy-journal-theme"]
 	path = sketchy-journal-theme
 	url = https://github.com/blocklet/sketchy-journal-theme.git
+[submodule "minimal-essence-theme"]
+	path = minimal-essence-theme
+	url = https://github.com/blocklet/minimal-essence-theme.git
