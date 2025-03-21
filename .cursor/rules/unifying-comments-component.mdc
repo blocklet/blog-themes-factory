@@ -1,0 +1,22 @@
+---
+description: Unifying the use of the Comments component
+globs: 
+alwaysApply: false
+---
+
+# 统一所有 Comments 组件的使用方式
+
+```
+<Comments
+  target={{ id: blog.id, title: blog.title }}
+  displayReaction={false}
+  flatView={false}
+  autoCollapse={false}
+  allowCopyLink
+  installerProps={{
+    fallback,
+  }}
+/>
+```
+
+确保所有的博客主题的博客详情页面的 Comments 使用方式为上面的示例一样。

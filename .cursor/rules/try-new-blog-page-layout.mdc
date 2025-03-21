@@ -1,0 +1,9 @@
+---
+description: try new blog page layout for new theme
+globs: 
+alwaysApply: false
+---
+
+# 大胆尝试全新的布局方式
+
+- 学习 `base_blog_theme` 的同时，需要大胆创新，尝试全新的页面布局方式，让页面整体布局和风格都和 `base_blog_theme` 不一样
