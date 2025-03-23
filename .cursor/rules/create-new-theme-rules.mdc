@@ -59,6 +59,7 @@ alwaysApply: false
 - 博客详情页必须有评论功能，由 `import { Comments } from '@blocklet/discuss-kit';` 提供该能力，这个组件需要一个 target 对象，这个严格按照之前的写法就可以
 - `<Helmet><title>{xx}</title></Helmet>` 代码需要保留，这是为了让浏览器窗口动态的更新当前页面的 title 属性
 - 确保所有的页面都适配新的主题，不要有遗漏
+- 不要修改 header.tsx 代码
 
 ## 提交检查清单
 - [ ] 主题字体已更新
