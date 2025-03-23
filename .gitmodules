@@ -28,3 +28,6 @@
 [submodule "minimal-essence-theme"]
 	path = minimal-essence-theme
 	url = https://github.com/blocklet/minimal-essence-theme.git
+[submodule "cyberpunk-neon-theme"]
+	path = cyberpunk-neon-theme
+	url = https://github.com/blocklet/cyberpunk-neon-theme.git
