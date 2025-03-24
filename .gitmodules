@@ -34,3 +34,6 @@
 [submodule "zen-garden-theme"]
 	path = zen-garden-theme
 	url = https://github.com/blocklet/zen-garden-theme.git
+[submodule "pixelcraft-theme"]
+	path = pixelcraft-theme
+	url = https://github.com/blocklet/pixelcraft-theme.git
