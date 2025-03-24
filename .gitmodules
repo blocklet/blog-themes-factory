@@ -31,3 +31,6 @@
 [submodule "cyberpunk-neon-theme"]
 	path = cyberpunk-neon-theme
 	url = https://github.com/blocklet/cyberpunk-neon-theme.git
+[submodule "zen-garden-theme"]
+	path = zen-garden-theme
+	url = https://github.com/blocklet/zen-garden-theme.git
